@@ -23,6 +23,9 @@ htmlcov
 dependencies-layer.zip
 dependencies-layer
 
+.cache
+/*.csv
+
 # Serverless directories
 .serverless
 
