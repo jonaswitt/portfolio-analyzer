@@ -4,10 +4,12 @@ import numpy as np
 import datetime, os, os.path
 import argparse, sys
 import json
+import math
 from functools import reduce
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-m', dest='movementsPath', help='movements input file', required=True, type=str)
+parser.add_argument('-l', dest='limitsPath', help='limits input file', required=False, type=str)
 parser.add_argument('-o', dest='portfolioPath', help='portfolio output file', required=False, type=str)
 args = parser.parse_args(sys.argv[1:])
 
@@ -179,4 +181,67 @@ printPortfolio(getPortfolioAtDate(now))
 
 print("One week ago:")
 printPortfolio(getPortfolioAtDate(now - datetime.timedelta(7)))
+
+def getFees(symbol, orderVolume):
+    if symbol == "GC=F":
+        # Degussa
+        return orderVolume * 0.03
+    # Diba Direkthandel, adjust as needed
+    return min(4.9 + orderVolume * 0.25 / 100, 69.9)
+
+def testLimits(portfolio, limits):
+    total = portfolio["MarketValue"].sum()
+    investable = max(0, total - getMinCash(total))
+
+    for symbol, row in limits.iterrows():
+        targetWeight = row["TargetWeightInvestable"]
+        targetAmount = investable * targetWeight
+
+        newTargetWeight = None
+        minMarketValue = row["MinMarketValue"]
+        maxMarketValue = row["MaxMarketValue"]
+        if minMarketValue and not np.isnan(minMarketValue) and targetAmount < minMarketValue:
+            newTargetWeight = minMarketValue / investable
+            print("{} MinMarketValue of {:.2f} not reached by {:.2f}, adjusting TargetWeightInvestable to {:.3f}".format(symbol, minMarketValue, targetAmount, newTargetWeight))
+        elif maxMarketValue and not np.isnan(maxMarketValue) and targetAmount > maxMarketValue:
+            newTargetWeight = maxMarketValue / investable
+            print("{} MaxMarketValue of {:.2f} exceeded by {:.2f}, adjusting TargetWeightInvestable to {:.3f}".format(symbol, maxMarketValue, targetAmount, newTargetWeight))
+
+        if newTargetWeight is not None:
+            limits.loc[symbol, "TargetWeightInvestable"] = newTargetWeight
+            otherRowIndexer = limits.index.values != symbol
+            limits.loc[otherRowIndexer, "TargetWeightInvestable"] = limits.loc[otherRowIndexer, "TargetWeightInvestable"] / (limits.loc[otherRowIndexer, "TargetWeightInvestable"].sum() - newTargetWeight)
+
+    print(limits)
+
+    for symbol, row in limits.iterrows():
+        name = portfolio.loc[symbol, "Name"]
+        targetWeight = row["TargetWeightInvestable"]
+        targetAmount = investable * targetWeight
+        price = portfolio.loc[symbol, "Price"]
+        holdings = portfolio.loc[symbol, "Holdings"]
+        targetHoldings = math.floor(targetAmount / price)
+
+        print()
+        print("{} ({})".format(symbol, name))
+        print("Current holdings: {} @ {} {} = {:.2f} {} ({:.1f}%)".format(holdings, price, outCurrency, holdings * price, outCurrency, holdings * price / investable * 100))
+        print("Target holdings: {} ({:.1f}) @ {} {} = {:.2f} {} ({:.1f}%, target {:.1f})".format(targetHoldings, targetAmount / price, price, outCurrency, targetHoldings * price, outCurrency, targetHoldings * price / investable * 100, targetWeight * 100))
+
+        if targetHoldings != holdings:
+            amt = abs(targetHoldings - holdings)
+            volume = amt * price
+            fees = getFees(symbol, volume)
+            print("Action: {} {} @ {} {} = {:.2f} {} (order fees ~ {:.2f} {} = {:.2f}%)".format(
+                "BUY" if targetHoldings > holdings else "SELL", amt,
+                price, outCurrency, volume, outCurrency, fees, outCurrency, fees / volume * 100))
+
+if args.limitsPath:
+    limits = pd.read_csv(args.limitsPath, index_col="Symbol")
+
+    if limits["TargetWeightInvestable"].sum() != 1:
+        print("Warning: sum of TargetWeightInvestable is {}, redistributing".format(limits["TargetWeightInvestable"].sum()))
+        limits["TargetWeightInvestable"] = limits["TargetWeightInvestable"] / limits["TargetWeightInvestable"].sum()
+
+    portfolio = getPortfolioAtDate(now)
+    testLimits(portfolio, limits)
 
