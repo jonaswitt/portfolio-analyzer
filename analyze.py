@@ -228,18 +228,21 @@ def testLimits(portfolio, limits):
         targetAmount = investable * targetWeight
         price = portfolio.loc[symbol, "Price"]
         holdings = portfolio.loc[symbol, "Holdings"]
-        targetHoldings = math.floor(targetAmount / price)
+        # Using round() instead of floor() to get closer to
+        # targets, even if it means exceeding the max investable
+        # amount in some cases
+        targetHoldings = round(targetAmount / price)
 
         print()
         print("{} ({})".format(symbol, name))
-        print("Current holdings: {} @ {} {} = {:.2f} {} ({:.1f}%)".format(holdings, price, outCurrency, holdings * price, outCurrency, holdings * price / investable * 100))
-        print("Target holdings: {} ({:.1f}) @ {} {} = {:.2f} {} ({:.1f}%, target {:.1f})".format(targetHoldings, targetAmount / price, price, outCurrency, targetHoldings * price, outCurrency, targetHoldings * price / investable * 100, targetWeight * 100))
+        print("Current holdings: {:.0f} @ {} {} = {:.2f} {} ({:.1f}%)".format(holdings, price, outCurrency, holdings * price, outCurrency, holdings * price / investable * 100))
+        print("Target holdings: {:.0f} ({:.1f}) @ {} {} = {:.2f} {} ({:.1f}%, target {:.1f})".format(targetHoldings, targetAmount / price, price, outCurrency, targetHoldings * price, outCurrency, targetHoldings * price / investable * 100, targetWeight * 100))
 
         if targetHoldings != holdings:
             amt = abs(targetHoldings - holdings)
             volume = amt * price
             fees = getFees(symbol, volume)
-            print("Action: {} {} @ {} {} = {:.2f} {} (order fees ~ {:.2f} {} = {:.2f}%)".format(
+            print("Action: {} {:.0f} @ {} {} = {:.2f} {} (order fees ~ {:.2f} {} = {:.2f}%)".format(
                 "BUY" if targetHoldings > holdings else "SELL", amt,
                 price, outCurrency, volume, outCurrency, fees, outCurrency, fees / volume * 100))
 
