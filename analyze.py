@@ -13,8 +13,26 @@ parser.add_argument('-l', dest='limitsPath', help='limits input file', required=
 parser.add_argument('-o', dest='portfolioPath', help='portfolio output file', required=False, type=str)
 args = parser.parse_args(sys.argv[1:])
 
+# Returns the minimum amount of cash that should be in the portfolio
+# for a given total portfolio size. The remainder is considered "investable".
 def getMinCash(total):
     return np.fmax(2000, total * 0.05)
+
+# Returns the fees charged by a broker to trade the order volume of a symbol
+def getFees(symbol, orderVolume):
+    if symbol == "GC=F":
+        # Degussa
+        return orderVolume * 0.03
+    # Diba Direkthandel, adjust as needed
+    return min(4.9 + orderVolume * 0.25 / 100, 69.9)
+
+# Which currency should be used to print portfolio values
+outCurrency = "EUR"
+
+# Which symbols in the portfolio should be considered currencies / cash
+currencies = ["EUR", "USD"]
+
+
 
 cacheDir = ".cache"
 if not os.path.exists(cacheDir):
@@ -76,9 +94,6 @@ def getInfo(symbol):
         return fp.write(json.dumps(info))
 
     return info
-
-currencies = ["EUR", "USD"]
-outCurrency = "EUR"
 
 now = datetime.date.today()
 movements = pd.read_csv(args.movementsPath, index_col="Date", parse_dates=True, comment="#", skip_blank_lines=True)
@@ -160,10 +175,10 @@ def printPortfolio(portfolio):
 
     total = portfolio["MarketValue"].sum()
     totalInvested = portfolio[[s not in currencies for s in portfolio.index.values]]["MarketValue"].sum()
-    print("Portfolio total: {:,.2f}".format(total))
+    print("Portfolio total: {:,.2f} {}".format(total, outCurrency))
     investable = max(0, total - getMinCash(total))
-    print("Portfolio investable: {:,.2f} ({:.1f}%)".format(investable, investable / total * 100))
-    print("Portfolio invested: {:,.2f} ({:.1f}%)".format(totalInvested, totalInvested / total * 100))
+    print("Portfolio investable: {:,.2f} {} ({:.1f}%)".format(investable, outCurrency, investable / total * 100))
+    print("Portfolio invested: {:,.2f} {} ({:.1f}%)".format(totalInvested, outCurrency, totalInvested / total * 100))
     print()
 
 def writePortfolio(portfolio, portfolioPath):
@@ -181,13 +196,6 @@ printPortfolio(getPortfolioAtDate(now))
 
 print("One week ago:")
 printPortfolio(getPortfolioAtDate(now - datetime.timedelta(7)))
-
-def getFees(symbol, orderVolume):
-    if symbol == "GC=F":
-        # Degussa
-        return orderVolume * 0.03
-    # Diba Direkthandel, adjust as needed
-    return min(4.9 + orderVolume * 0.25 / 100, 69.9)
 
 def testLimits(portfolio, limits):
     total = portfolio["MarketValue"].sum()
