@@ -2,16 +2,9 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import datetime, os, os.path
-import argparse, sys
 import json
 import math
 from functools import reduce
-
-parser = argparse.ArgumentParser()
-parser.add_argument('-m', dest='movementsPath', help='movements input file', required=True, type=str)
-parser.add_argument('-l', dest='limitsPath', help='limits input file', required=False, type=str)
-parser.add_argument('-o', dest='portfolioPath', help='portfolio output file', required=False, type=str)
-args = parser.parse_args(sys.argv[1:])
 
 # Returns the minimum amount of cash that should be in the portfolio
 # for a given total portfolio size. The remainder is considered "investable".
@@ -95,36 +88,40 @@ def getInfo(symbol):
 
     return info
 
-now = datetime.date.today()
-movements = pd.read_csv(args.movementsPath, index_col="Date", parse_dates=True, comment="#", skip_blank_lines=True)
-timeRange = pd.date_range(movements.index.min(), now)
+def readMovements(movementsPath, latestDate):
+    movements = pd.read_csv(movementsPath, index_col="Date", parse_dates=True, comment="#", skip_blank_lines=True)
+    timeRange = pd.date_range(movements.index.min(), latestDate)
+    allSymbols = movements["Symbol"].unique()
 
-allSymbols = movements["Symbol"].unique()
+    holdingsHistoryBySymbol = {}
+    for symbol in allSymbols:
+        holdingsHistory = movements[movements["Symbol"] == symbol]["Change"]
+        holdingsHistory = holdingsHistory.groupby(holdingsHistory.index).sum()
+        holdingsHistory = holdingsHistory.reindex(timeRange, fill_value=0).sort_index().cumsum()
+        holdingsHistoryBySymbol[symbol] = holdingsHistory
 
-holdingsHistoryBySymbol = {}
-for symbol in allSymbols:
-    holdingsHistory = movements[movements["Symbol"] == symbol]["Change"]
-    holdingsHistory = holdingsHistory.groupby(holdingsHistory.index).sum()
-    holdingsHistory = holdingsHistory.reindex(timeRange, fill_value=0).sort_index().cumsum()
-    holdingsHistoryBySymbol[symbol] = holdingsHistory
+    priceHistoryBySymbol = {}
+    # valueHistoryBySymbol = {}
+    for symbol in allSymbols:
+        if symbol in currencies:
+            priceHistory = pd.Series(np.ones(len(timeRange)), index=timeRange)
+        else:
+            priceHistory = getPriceHistory(symbol, holdingsHistory.index[0], holdingsHistory.index[-1])["Close"]
+        priceHistoryBySymbol[symbol] = priceHistory
+        holdingsHistory = holdingsHistoryBySymbol[symbol]
+        # valueHistory = (priceHistory * holdingsHistory).ffill()
+        # valueHistoryBySymbol[symbol] = valueHistory
 
-priceHistoryBySymbol = {}
-valueHistoryBySymbol = {}
-for symbol in allSymbols:
-    if symbol in currencies:
-        priceHistory = pd.Series(np.ones(len(timeRange)), index=timeRange)
-    else:
-        priceHistory = getPriceHistory(symbol, holdingsHistory.index[0], now)["Close"]
-    priceHistoryBySymbol[symbol] = priceHistory
-    holdingsHistory = holdingsHistoryBySymbol[symbol]
-    valueHistory = (priceHistory * holdingsHistory).ffill()
-    valueHistoryBySymbol[symbol] = valueHistory
+    # valueHistoryTotal = reduce(lambda a, b: a + b, [valueHistoryBySymbol[s] for s in allSymbols])
+    # valueHistoryTotalInvested = reduce(lambda a, b: a + b, [valueHistoryBySymbol[s] for s in allSymbols if s not in currencies])
+    # valueHistoryTotalInvestable = np.fmax(0, valueHistoryTotal - getMinCash(valueHistoryTotal))
 
-valueHistoryTotal = reduce(lambda a, b: a + b, [valueHistoryBySymbol[s] for s in allSymbols])
-valueHistoryTotalInvested = reduce(lambda a, b: a + b, [valueHistoryBySymbol[s] for s in allSymbols if s not in currencies])
-valueHistoryTotalInvestable = np.fmax(0, valueHistoryTotal - getMinCash(valueHistoryTotal))
+    return movements, holdingsHistoryBySymbol, priceHistoryBySymbol
 
-def getPortfolioAtDate(date):
+def getPortfolioAtDate(movements, holdingsHistoryBySymbol, priceHistoryBySymbol, date):
+    timeRange = pd.date_range(movements.index.min(), date)
+    allSymbols = movements["Symbol"].unique()
+
     portfolio = pd.DataFrame({}, index=allSymbols)
     portfolio.index.name = "Symbol"
 
@@ -187,16 +184,6 @@ def writePortfolio(portfolio, portfolioPath):
 
     portfolio.to_csv(portfolioPath)
 
-if args.portfolioPath:
-    portfolio = getPortfolioAtDate(now)
-    writePortfolio(portfolio, args.portfolioPath)
-
-print("Today:")
-printPortfolio(getPortfolioAtDate(now))
-
-print("One week ago:")
-printPortfolio(getPortfolioAtDate(now - datetime.timedelta(7)))
-
 def testLimits(portfolio, limits):
     total = portfolio["MarketValue"].sum()
     investable = max(0, total - getMinCash(total))
@@ -245,14 +232,4 @@ def testLimits(portfolio, limits):
             print("Action: {} {:.0f} @ {} {} = {:.2f} {} (order fees ~ {:.2f} {} = {:.2f}%)".format(
                 "BUY" if targetHoldings > holdings else "SELL", amt,
                 price, outCurrency, volume, outCurrency, fees, outCurrency, fees / volume * 100))
-
-if args.limitsPath:
-    limits = pd.read_csv(args.limitsPath, index_col="Symbol")
-
-    if limits["TargetWeightInvestable"].sum() != 1:
-        print("Warning: sum of TargetWeightInvestable is {}, redistributing".format(limits["TargetWeightInvestable"].sum()))
-        limits["TargetWeightInvestable"] = limits["TargetWeightInvestable"] / limits["TargetWeightInvestable"].sum()
-
-    portfolio = getPortfolioAtDate(now)
-    testLimits(portfolio, limits)
 

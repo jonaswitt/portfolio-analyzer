@@ -17,8 +17,8 @@ Requires Python 3.7 (or higher).
 Run `pip install -r requirements.txt` to install dependencies (using [Virtualenv](https://virtualenv.pypa.io/) may be helpful).
 
 ```
-python analyze.py --help
-usage: analyze.py [-h] -m MOVEMENTSPATH [-l LIMITSPATH] [-o PORTFOLIOPATH]
+$ python analyze-cli.py --help
+usage: analyze-cli.py [-h] -m MOVEMENTSPATH [-l LIMITSPATH] [-o PORTFOLIOPATH]
 
 optional arguments:
   -h, --help        show this help message and exit
@@ -30,7 +30,7 @@ optional arguments:
 ## Example
 
 ```
-$ python analyze.py -m example/movements.csv -l example/limits.csv -o example/portfolio.csv
+$ python analyze-cli.py -m example/movements.csv -l example/limits.csv -o example/portfolio.csv
 Today:
                                                       Name Currency  Holdings   Price  MarketValue  RelativeWeight  RelativeWeightInvested  RelativeWeightInvestable
 Symbol
