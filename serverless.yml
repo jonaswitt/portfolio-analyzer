@@ -88,6 +88,8 @@ package:
 functions:
   analyze:
     handler: handler.handler
+    events:
+      - schedule: cron(0 20 ? * 2-6 *) # Weekdays 20:00 UTC
     layers:
       - Ref: DependenciesLayerVersion
 
