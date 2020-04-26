@@ -184,7 +184,13 @@ def writePortfolio(portfolio, portfolioPath):
     portfolio.to_csv(portfolioPath)
 
 def readLimits(limitsPath):
-    return pd.read_csv(limitsPath, index_col="Symbol")
+    limits = pd.read_csv(limitsPath, index_col="Symbol")
+
+    if limits["TargetWeightInvestable"].sum() != 1:
+        print("Warning: sum of TargetWeightInvestable is {}, redistributing".format(limits["TargetWeightInvestable"].sum()))
+        limits["TargetWeightInvestable"] = limits["TargetWeightInvestable"] / limits["TargetWeightInvestable"].sum()
+
+    return limits
 
 def testLimits(portfolio, limits):
     total = portfolio["MarketValue"].sum()

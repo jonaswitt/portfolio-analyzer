@@ -25,9 +25,5 @@ if args.portfolioPath:
 if args.limitsPath:
     limits = analyzer.readLimits(args.limitsPath)
 
-    if limits["TargetWeightInvestable"].sum() != 1:
-        print("Warning: sum of TargetWeightInvestable is {}, redistributing".format(limits["TargetWeightInvestable"].sum()))
-        limits["TargetWeightInvestable"] = limits["TargetWeightInvestable"] / limits["TargetWeightInvestable"].sum()
-
     analyzer.testLimits(portfolioToday, limits)
 
