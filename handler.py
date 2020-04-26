@@ -4,11 +4,14 @@ import analyzer
 from jinja2 import Template
 
 s3 = boto3.resource('s3')
-bucket = s3.Bucket(os.environ["STORAGE_BUCKET_NAME"])
+s3Client = boto3.client('s3')
+bucketName = os.environ["STORAGE_BUCKET_NAME"]
+bucket = s3.Bucket(bucketName)
 
 ses = boto3.client('ses')
 
-workingDir = "/tmp"
+workingDir = os.environ["TMP_DIR"]
+cacheDir = os.environ["CACHE_DIR"]
 
 movementsFilename = "movements.csv"
 movementsPath = os.path.join(workingDir, movementsFilename)
@@ -18,6 +21,23 @@ portfolioPath = os.path.join(workingDir, portfolioFilename)
 
 def handler(event, context):
     today = datetime.date.today()
+
+    if not os.path.exists(cacheDir):
+        os.mkdir(cacheDir)
+    try:
+        listResponse = s3Client.list_objects_v2(
+            Bucket=bucketName,
+            Prefix="cache/",
+        )
+        for cacheEntry in listResponse["Contents"]:
+            key = cacheEntry["Key"]
+            if key.endswith("/"):
+                continue
+            localPath = os.path.join(cacheDir, os.path.basename(key))
+            print("Downloading {} to {}".format(key, localPath))
+            bucket.download_file(key, localPath)
+    except Exception as ex:
+        print(ex)
 
     # Download & parse movements
     bucket.download_file(movementsFilename, movementsPath)

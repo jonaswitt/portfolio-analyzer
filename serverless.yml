@@ -14,9 +14,12 @@ provider:
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - "s3:Get*"
-        - "s3:Put*"
+        - "s3:*"
       Resource:
+        - Fn::Join:
+          - ''
+          - - 'arn:aws:s3:::'
+            - Ref: StorageS3Bucket
         - Fn::Join:
           - ''
           - - 'arn:aws:s3:::'
@@ -30,7 +33,8 @@ provider:
 
   environment:
     STAGE: ${self:provider.stage}
-    CACHE_DIR: /tmp
+    TMP_DIR: /tmp
+    CACHE_DIR: /tmp/cache
     STORAGE_BUCKET_NAME:
       Fn::Join:
         - ''

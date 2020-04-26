@@ -26,7 +26,7 @@ outCurrency = "EUR"
 currencies = ["EUR", "USD"]
 
 
-cacheDir = os.path.join(os.environ.get("CACHE_DIR", "."), ".cache")
+cacheDir = os.environ.get("CACHE_DIR", ".cache")
 if not os.path.exists(cacheDir):
     os.mkdir(cacheDir)
 
