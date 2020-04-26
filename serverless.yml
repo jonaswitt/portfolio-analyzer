@@ -1,0 +1,124 @@
+service: portfolio-analyzer
+
+frameworkVersion: ">=1.68.0 <2.0.0"
+
+provider:
+  name: aws
+  runtime: python3.7
+  memorySize: 512
+  timeout: 900
+
+  stage: ${opt:stage, 'prod'}
+  region: eu-central-1
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:Get*"
+        - "s3:Put*"
+      Resource:
+        - Fn::Join:
+          - ''
+          - - 'arn:aws:s3:::'
+            - Ref: StorageS3Bucket
+            - '/*'
+
+  environment:
+    STAGE: ${self:provider.stage}
+    CACHE_DIR: /tmp
+    STORAGE_BUCKET_NAME:
+      Fn::Join:
+        - ''
+        - - Ref: StorageS3Bucket
+
+plugins:
+  # - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    pythonBin: python
+    fileName: requirements.txt
+    zip: false
+    slim: true
+    # noDeploy:
+    #   - boto3
+    #   - botocore
+    #   - docutils
+    #   - jmespath
+    #   - s3transfer
+    #   - six
+    #   - coverage
+    #   - funcsigs
+    #   - mock
+    #   - nose2
+    #   - pbr
+    dockerizePip: true
+   # vendor: ./vendor/
+   # useDownloadCache: true
+   # useStaticCache: true
+
+package:
+  include:
+    - "*.py"
+  exclude:
+    - dependencies-layer/**
+    - dependencies-layer*.zip
+    - "*.sh"
+    - ".*"
+    # - requirements*.txt
+    - __pycache__
+    - venv/**
+    - venv37/**
+    - node_modules/**
+    - package-lock.json
+    - package.json
+    - "*.md"
+    - yarn.lock
+    - .cache/**
+    - example/**
+    - "*.csv"
+
+functions:
+  analyze:
+    handler: handler.handler
+    layers:
+      - Ref: DependenciesLayerVersion
+
+resources:
+  Description: Portfolio Analyzer
+
+  Resources:
+    DependenciesLayerVersion:
+      Type: AWS::Lambda::LayerVersion
+      Properties:
+        CompatibleRuntimes:
+          - python3.7
+        Content:
+          S3Bucket: dependencies.portfolio-analyzer.jonaswitt.com
+          S3Key: dependencies-layer-v1.zip
+        Description: Python dependencies of the portfolio-analyzer tool (pandas/numpy)
+        LayerName: portfolio-analyzer-dependencies
+
+    StorageS3Bucket:
+      Type: AWS::S3::Bucket
+      DeletionPolicy: Retain
+      Properties:
+        BucketName: !Join
+        - "-"
+        - - ${self:service}-portfolio-data-${self:provider.stage}
+          - !Select
+            - 0
+            - !Split
+              - "-"
+              - !Select
+                - 2
+                - !Split
+                  - "/"
+                  - !Ref "AWS::StackId"
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: TRUE
+          BlockPublicPolicy: TRUE
+          IgnorePublicAcls: TRUE
+          RestrictPublicBuckets: TRUE
+
+  Outputs:

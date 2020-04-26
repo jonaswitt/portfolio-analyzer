@@ -1,0 +1,11 @@
+{
+  "name": "portfolio-analyzer",
+  "version": "1.0.0",
+  "repository": "git@github.com:jonaswitt/portfolio-analyzer.git",
+  "author": "Jonas Witt <mail@jonaswitt.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "serverless": "^1.68.0",
+    "serverless-python-requirements": "^5.1.0"
+  }
+}

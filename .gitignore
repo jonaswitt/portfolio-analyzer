@@ -20,7 +20,7 @@ var/
 htmlcov
 *.pyc
 
-dependencies-layer.zip
+dependencies-layer*.zip
 dependencies-layer
 
 .cache
