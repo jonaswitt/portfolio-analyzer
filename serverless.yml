@@ -22,6 +22,11 @@ provider:
           - - 'arn:aws:s3:::'
             - Ref: StorageS3Bucket
             - '/*'
+    - Effect: "Allow"
+      Action:
+        - "ses:SendEmail"
+      Resource:
+        - "*"
 
   environment:
     STAGE: ${self:provider.stage}
@@ -30,6 +35,7 @@ provider:
       Fn::Join:
         - ''
         - - Ref: StorageS3Bucket
+    NOTIFICATION_EMAIL: recipient@yourdomain.com
 
 plugins:
   # - serverless-python-requirements

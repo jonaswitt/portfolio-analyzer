@@ -5,6 +5,8 @@ import analyzer
 s3 = boto3.resource('s3')
 bucket = s3.Bucket(os.environ["STORAGE_BUCKET_NAME"])
 
+ses = boto3.client('ses')
+
 workingDir = "/tmp"
 
 movementsFilename = "movements.csv"
@@ -27,3 +29,24 @@ def handler(event, context):
     analyzer.writePortfolio(portfolioToday, portfolioPath)
 
     bucket.upload_file(portfolioPath, portfolioFilename)
+
+    ses.send_email(
+        Destination={
+            'ToAddresses': [
+                os.environ["NOTIFICATION_EMAIL"],
+            ],
+        },
+        Message={
+            'Body': {
+                'Html': {
+                    'Charset': "UTF-8",
+                    'Data': "<html><body><h1>Portfolio Today</h1><pre>{}</pre></body></html>".format(portfolioToday.to_string()),
+                },
+            },
+            'Subject': {
+                'Charset': "UTF-8",
+                'Data': "Portfolio Analyzer Update",
+            },
+        },
+        Source=os.environ["NOTIFICATION_EMAIL"],
+    )
