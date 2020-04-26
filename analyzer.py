@@ -81,9 +81,9 @@ def getInfo(symbol):
 
     ticker = yf.Ticker(symbol)
     print("Getting symbol info for {}...".format(symbol))
-    info = ticker.info
+    info = ticker.get_info()
     with open(infoFile, "w") as fp:
-        return fp.write(json.dumps(info))
+        fp.write(json.dumps(info))
 
     return info
 
