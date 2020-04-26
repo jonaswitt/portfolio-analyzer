@@ -183,6 +183,9 @@ def writePortfolio(portfolio, portfolioPath):
 
     portfolio.to_csv(portfolioPath)
 
+def readLimits(limitsPath):
+    return pd.read_csv(limitsPath, index_col="Symbol")
+
 def testLimits(portfolio, limits):
     total = portfolio["MarketValue"].sum()
     investable = max(0, total - getMinCash(total))

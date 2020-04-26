@@ -1,5 +1,5 @@
-import argparse, sys
-from analyzer import *
+import argparse, sys, datetime
+import analyzer
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-m', dest='movementsPath', help='movements input file', required=True, type=str)
@@ -9,25 +9,25 @@ args = parser.parse_args(sys.argv[1:])
 
 today = datetime.date.today()
 
-movements, holdingsHistoryBySymbol, priceHistoryBySymbol = readMovements(args.movementsPath, today)
+movements, holdingsHistoryBySymbol, priceHistoryBySymbol = analyzer.readMovements(args.movementsPath, today)
 
-portfolioToday = getPortfolioAtDate(movements, holdingsHistoryBySymbol, priceHistoryBySymbol, today)
+portfolioToday = analyzer.getPortfolioAtDate(movements, holdingsHistoryBySymbol, priceHistoryBySymbol, today)
 
 print("Today:")
-printPortfolio(portfolioToday)
+analyzer.printPortfolio(portfolioToday)
 
 print("One week ago:")
-printPortfolio(getPortfolioAtDate(movements, holdingsHistoryBySymbol, priceHistoryBySymbol, today - datetime.timedelta(7)))
+analyzer.printPortfolio(analyzer.getPortfolioAtDate(movements, holdingsHistoryBySymbol, priceHistoryBySymbol, today - datetime.timedelta(7)))
 
 if args.portfolioPath:
-    writePortfolio(portfolioToday, args.portfolioPath)
+    analyzer.writePortfolio(portfolioToday, args.portfolioPath)
 
 if args.limitsPath:
-    limits = pd.read_csv(args.limitsPath, index_col="Symbol")
+    limits = analyzer.readLimits(args.limitsPath)
 
     if limits["TargetWeightInvestable"].sum() != 1:
         print("Warning: sum of TargetWeightInvestable is {}, redistributing".format(limits["TargetWeightInvestable"].sum()))
         limits["TargetWeightInvestable"] = limits["TargetWeightInvestable"] / limits["TargetWeightInvestable"].sum()
 
-    testLimits(portfolioToday, limits)
+    analyzer.testLimits(portfolioToday, limits)
 
