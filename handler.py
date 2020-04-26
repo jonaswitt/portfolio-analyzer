@@ -47,7 +47,7 @@ def handler(event, context):
             },
             'Subject': {
                 'Charset': "UTF-8",
-                'Data': "Portfolio Analyzer Update",
+                'Data': "[{}] Portfolio Update".format(today.strftime("%Y-%m-%d")),
             },
         },
         Source=os.environ["NOTIFICATION_EMAIL_SENDER"],
