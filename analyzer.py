@@ -144,7 +144,7 @@ def getPortfolioAtDate(movements, holdingsHistoryBySymbol, priceHistoryBySymbol,
                     fxSymbol = "{}=X".format(outCurrency)
                 else:
                     fxSymbol = "{}{}=X".format(info["currency"], outCurrency)
-                fx = getPriceHistory(fxSymbol, holdingsHistory.index.min(), now)["Close"]
+                fx = getPriceHistory(fxSymbol, holdingsHistory.index.min(), date)["Close"]
 
         portfolio.loc[symbol, "Holdings"] = holdingsHistory.loc[date]
 
