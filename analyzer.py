@@ -151,7 +151,9 @@ def getPortfolioAtDate(movements, holdingsHistoryBySymbol, priceHistoryBySymbol,
 
         portfolio.loc[symbol, "Holdings"] = holdingsHistory.loc[date]
 
-        priceHistory = priceHistory.reindex(priceHistory.index.union([date])).ffill() * fx
+        priceHistory = priceHistory.reindex(priceHistory.index.union([date])).ffill()
+        fx = fx.reindex(fx.index.union([date])).ffill()
+        priceHistory = priceHistory * fx
 
         portfolio.loc[symbol, "Price"] = priceHistory.loc[date]
 
