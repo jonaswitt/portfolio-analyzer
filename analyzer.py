@@ -68,7 +68,10 @@ def getPriceHistory(symbol, start, end):
             histories.append(newHistory)
             updated = True
 
-    history = pd.concat(histories).sort_index().drop_duplicates()
+    history = pd.concat(histories)
+    history = history.loc[~history.index.duplicated(keep='last')]
+    history = history.sort_index()
+
     if updated:
         history.to_csv(histFile)
     return history
