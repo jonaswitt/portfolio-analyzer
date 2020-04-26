@@ -35,7 +35,8 @@ provider:
       Fn::Join:
         - ''
         - - Ref: StorageS3Bucket
-    NOTIFICATION_EMAIL: recipient@yourdomain.com
+    NOTIFICATION_EMAIL_SENDER: recipient@yourdomain.com
+    NOTIFICATION_EMAIL_RECIPIENT: recipient@yourdomain.com
 
 plugins:
   # - serverless-python-requirements

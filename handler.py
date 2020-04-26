@@ -35,7 +35,7 @@ def handler(event, context):
     ses.send_email(
         Destination={
             'ToAddresses': [
-                os.environ["NOTIFICATION_EMAIL"],
+                os.environ["NOTIFICATION_EMAIL_RECIPIENT"],
             ],
         },
         Message={
@@ -50,5 +50,5 @@ def handler(event, context):
                 'Data': "Portfolio Analyzer Update",
             },
         },
-        Source=os.environ["NOTIFICATION_EMAIL"],
+        Source=os.environ["NOTIFICATION_EMAIL_SENDER"],
     )
