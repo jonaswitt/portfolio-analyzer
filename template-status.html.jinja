@@ -1,0 +1,21 @@
+<html>
+<body>
+
+<h1>Portfolio at {{ date.strftime("%Y-%m-%d") }}</h1>
+<table>
+    <thead>
+        <th>Symbol</th>
+        <th>Holdings</th>
+    </thead>
+    <tbody>
+    {% for symbol, row in portfolio.sort_values("RelativeWeightInvestable").iterrows() %}
+        <tr>
+        <th>{{ symbol }}</th>
+        <td>{{ "{:.0f}".format(row["Holdings"]) }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+</body>
+</html>

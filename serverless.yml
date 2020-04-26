@@ -101,7 +101,7 @@ resources:
           - python3.7
         Content:
           S3Bucket: dependencies.portfolio-analyzer.jonaswitt.com
-          S3Key: dependencies-layer-v1.zip
+          S3Key: dependencies-layer-v2.zip
         Description: Python dependencies of the portfolio-analyzer tool (pandas/numpy)
         LayerName: portfolio-analyzer-dependencies
 
