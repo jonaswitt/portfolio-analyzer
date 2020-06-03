@@ -320,6 +320,10 @@
         padding: 0 4px;
       }
 
+      .nowrap {
+        white-space: nowrap;
+      }
+
     </style>
   </head>
   <body class="">
@@ -357,8 +361,8 @@
                                 <td>{{ symbol }}</td>
                                 <td style="max-width: 300px">{{ row["Name"] }}</td>
                                 <td class="numeric">{{ "{:,.0f}".format(row["Holdings"]) }}</td>
-                                <td class="numeric">{{ "{:,.2f}".format(row["Price"]) }}</td>
-                                <td class="numeric">{{ "{:,.2f}".format(row["MarketValue"]) }}</td>
+                                <td class="numeric nowrap">{{ "{:,.2f} {}".format(row["Price"], outCurrency) }}</td>
+                                <td class="numeric nowrap">{{ "{:,.2f} {}".format(row["MarketValue"], outCurrency) }}</td>
                                 <td class="numeric">{{ "{:.1f}%".format(row["RelativeWeight"] * 100) }}</td>
                                 <td class="numeric">{{ "{:.1f}%".format(row["RelativeWeightInvestable"] * 100) }}</td>
                                 </tr>
@@ -368,7 +372,8 @@
                                 <td></td>
                                 <td></td>
                                 <td></td>
-                                <td class="numeric">{{ "{:,.2f}".format(portfolio["MarketValue"].sum()) }}</td>
+                                <td class="numeric nowrap">{{ "{:,.2f} {}".format(portfolio["MarketValue"].sum(), outCurrency) }}</td>
+                                <td></td>
                                 <td></td>
                                 </tr>
                             </tbody>
@@ -395,8 +400,12 @@
                                 <td class="numeric">{{ "{:.1f}%".format(row["currentAmountPerc"]) }}</td>
                                 {% if row["actionType"] %}
                                 <td>{{ row["actionType"] }}</td>
-                                <td class="numeric">{{ "{:.0f} @ {:,.2f} {} = {:,.2f} {}".format(row["actionAmount"], row["actionPrice"], row["currency"], row["actionVolume"], row["currency"]) }}</td>
-                                <td class="numeric">{{ "{:.2f} {} ({:.2f}%)".format(row["actionFees"], row["currency"], row["actionFeePercentage"]) }}</td>
+                                <td class="nowrap">{{ "{:.0f} @ {:,.2f} {} <br/>= {:,.2f} {}".format(row["actionAmount"], row["actionPrice"], row["currency"], row["actionVolume"], row["currency"]) }}</td>
+                                <td class="numeric nowrap">{{ "{:.2f} {} ({:.2f}%)".format(row["actionFees"], row["currency"], row["actionFeePercentage"]) }}</td>
+                                {% else %}
+                                <td></td>
+                                <td></td>
+                                <td></td>
                                 {% endif %}
                               </tr>
                             {% endfor %}
