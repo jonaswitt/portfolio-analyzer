@@ -361,6 +361,39 @@
                             </tbody>
                         </table>
 
+                        <h2>Proposed Actions</h2>
+                        {% if limitActions|count > 0 %}
+                        <table>
+                            <thead>
+                                <th>Symbol</th>
+                                <th>Name</th>
+                                <th>Target</th>
+                                <th>Current</th>
+                                <th>Action</th>
+                                <th>Amount</th>
+                                <th>Action Fees</th>
+                            </thead>
+                            <tbody>
+                            {% for row in limitActions|sort(attribute="targetWeight", reverse=True) %}
+                              <tr>
+                                <td>{{ row["symbol"] }}</td>
+                                <td style="max-width: 300px">{{ row["name"] }}</td>
+                                <td class="numeric">{{ "{:.1f}%".format(row["targetWeight"] * 100) }}</td>
+                                <td class="numeric">{{ "{:.1f}%".format(row["currentAmountPerc"]) }}</td>
+                                {% if row["actionType"] %}
+                                <td>{{ row["actionType"] }}</td>
+                                <td class="numeric">{{ "{:.0f} @ {:,.2f} {} = {:,.2f} {}".format(row["actionAmount"], row["actionPrice"], row["currency"], row["actionVolume"], row["currency"]) }}</td>
+                                <td class="numeric">{{ "{:.2f} {} ({:.2f}%)".format(row["actionFees"], row["currency"], row["actionFeePercentage"]) }}</td>
+                                {% endif %}
+                              </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+
+                        {% else %}
+                        <p>None</p>
+                        {% endif %}
+
                       </td>
                     </tr>
                   </table>

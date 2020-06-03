@@ -222,6 +222,7 @@ def testLimits(portfolio, limits):
 
     print(limits)
 
+    actions = []
     for symbol, row in limits.iterrows():
         name = portfolio.loc[symbol, "Name"]
         targetWeight = row["TargetWeightInvestable"]
@@ -233,16 +234,47 @@ def testLimits(portfolio, limits):
         # amount in some cases
         targetHoldings = round(targetAmount / price)
 
+        currentAmount = holdings * price
+        currentAmountPerc = holdings * price / investable * 100
+
+        targetAmountPerc = targetHoldings * price / investable * 100
+
         print()
         print("{} ({})".format(symbol, name))
-        print("Current holdings: {:.0f} @ {} {} = {:.2f} {} ({:.1f}%)".format(holdings, price, outCurrency, holdings * price, outCurrency, holdings * price / investable * 100))
-        print("Target holdings: {:.0f} ({:.1f}) @ {} {} = {:.2f} {} ({:.1f}%, target {:.1f})".format(targetHoldings, targetAmount / price, price, outCurrency, targetHoldings * price, outCurrency, targetHoldings * price / investable * 100, targetWeight * 100))
+        print("Current holdings: {:.0f} @ {} {} = {:.2f} {} ({:.1f}%)".format(holdings, price, outCurrency, currentAmount, outCurrency, currentAmountPerc))
+        print("Target holdings: {:.0f} ({:.1f}) @ {} {} = {:.2f} {} ({:.1f}%, target {:.1f})".format(targetHoldings, targetAmount / price, price, outCurrency, targetHoldings * price, outCurrency, targetAmountPerc, targetWeight * 100))
+
+        limitAct = {
+            "symbol": symbol,
+            "name": name,
+            "currentAmount": currentAmount,
+            "currentAmountPerc": currentAmountPerc,
+            "targetAmount": targetAmount,
+            "targetAmountPerc": targetAmountPerc,
+            "targetWeight": targetWeight,
+        }
 
         if targetHoldings != holdings:
             amt = abs(targetHoldings - holdings)
             volume = amt * price
             fees = getFees(symbol, volume)
+            actType = "BUY" if targetHoldings > holdings else "SELL"
+            feePercentage = fees / volume * 100
             print("Action: {} {:.0f} @ {} {} = {:.2f} {} (order fees ~ {:.2f} {} = {:.2f}%)".format(
-                "BUY" if targetHoldings > holdings else "SELL", amt,
-                price, outCurrency, volume, outCurrency, fees, outCurrency, fees / volume * 100))
+                actType, amt,
+                price, outCurrency, volume, outCurrency, fees, outCurrency, feePercentage))
+
+            limitAct = dict(limitAct, **{
+                "actionType": actType,
+                "actionAmount": amt,
+                "actionPrice": price,
+                "currency": outCurrency,
+                "actionVolume": volume,
+                "actionFees": fees,
+                "actionFeePercentage": feePercentage,
+            })
+
+        actions.append(limitAct)
+
+    return actions
 

@@ -20,6 +20,9 @@ movementsPath = os.path.join(workingDir, movementsFilename)
 portfolioFilename = "portfolio.csv"
 portfolioPath = os.path.join(workingDir, portfolioFilename)
 
+limitsFilename = "limits.csv"
+limitsPath = os.path.join(workingDir, limitsFilename)
+
 def handler(event, context):
     today = datetime.date.today()
 
@@ -55,26 +58,39 @@ def handler(event, context):
     analyzer.writePortfolio(portfolioToday, portfolioPath)
     bucket.upload_file(portfolioPath, portfolioFilename)
 
+    # Test limits
+    limitActions = []
+    try:
+        bucket.download_file(limitsFilename, limitsPath)
+        limits = analyzer.readLimits(limitsPath)
+        limitActions = analyzer.testLimits(portfolioToday, limits)
+    except Exception as ex:
+        print("No limits.csv found, skipping limits test")
+
     # Send email
     with open("template-status.html.jinja", "r") as fp:
         template = Template(fp.read())
+    formattedBody = template.render(portfolio=portfolioToday, date=today, outCurrency=analyzer.outCurrency, limitActions=limitActions)
+    formattedSubject = "[{}] Portfolio Update".format(today.strftime("%Y-%m-%d"))
+    emailRecipient = os.environ["NOTIFICATION_EMAIL_RECIPIENT"]
 
+    print("Sending status email to {}...".format(emailRecipient))
     ses.send_email(
         Destination={
             'ToAddresses': [
-                os.environ["NOTIFICATION_EMAIL_RECIPIENT"],
+                emailRecipient,
             ],
         },
         Message={
             'Body': {
                 'Html': {
                     'Charset': "UTF-8",
-                    'Data': template.render(portfolio=portfolioToday, date=today, outCurrency=analyzer.outCurrency),
+                    'Data': formattedBody,
                 },
             },
             'Subject': {
                 'Charset': "UTF-8",
-                'Data': "[{}] Portfolio Update".format(today.strftime("%Y-%m-%d")),
+                'Data': formattedSubject,
             },
         },
         Source=os.environ["NOTIFICATION_EMAIL_SENDER"],
