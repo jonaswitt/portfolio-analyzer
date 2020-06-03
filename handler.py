@@ -12,6 +12,7 @@ ses = boto3.client('ses')
 
 workingDir = os.environ["TMP_DIR"]
 cacheDir = os.environ["CACHE_DIR"]
+cacheKeyPrefix = "cache/"
 
 movementsFilename = "movements.csv"
 movementsPath = os.path.join(workingDir, movementsFilename)
@@ -22,19 +23,24 @@ portfolioPath = os.path.join(workingDir, portfolioFilename)
 def handler(event, context):
     today = datetime.date.today()
 
+    # Download cache
     if not os.path.exists(cacheDir):
         os.mkdir(cacheDir)
     try:
         listResponse = s3Client.list_objects_v2(
             Bucket=bucketName,
-            Prefix="cache/",
+            Prefix=cacheKeyPrefix,
         )
-        for cacheEntry in listResponse["Contents"]:
+        cacheEntries = listResponse["Contents"]
+        if len(cacheEntries) > 0:
+            print("Downloading {} cache entries from s3://{}/{} ...".format(len(cacheEntries), bucketName, cacheKeyPrefix))
+        else:
+            print("No cache entries found in s3://{}/{}".format(bucketName, cacheKeyPrefix))
+        for cacheEntry in cacheEntries:
             key = cacheEntry["Key"]
             if key.endswith("/"):
                 continue
             localPath = os.path.join(cacheDir, os.path.basename(key))
-            print("Downloading {} to {}".format(key, localPath))
             bucket.download_file(key, localPath)
     except Exception as ex:
         print(ex)
@@ -49,6 +55,7 @@ def handler(event, context):
     analyzer.writePortfolio(portfolioToday, portfolioPath)
     bucket.upload_file(portfolioPath, portfolioFilename)
 
+    # Send email
     with open("template-status.html.jinja", "r") as fp:
         template = Template(fp.read())
 
@@ -72,3 +79,15 @@ def handler(event, context):
         },
         Source=os.environ["NOTIFICATION_EMAIL_SENDER"],
     )
+
+    # Upload cache
+    try:
+        print("Uploading cache to s3://{}/{} ...".format(bucketName, cacheKeyPrefix))
+        for cacheFileName in os.listdir(cacheDir):
+            cacheFilePath = os.path.join(cacheDir, cacheFileName)
+            if not os.path.isfile(cacheFilePath):
+                continue
+            key = "{}{}".format(cacheKeyPrefix, cacheFileName)
+            bucket.upload_file(cacheFilePath, key)
+    except Exception as ex:
+        print(ex)
