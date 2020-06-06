@@ -35,12 +35,9 @@ provider:
     STAGE: ${self:provider.stage}
     TMP_DIR: /tmp
     CACHE_DIR: /tmp/cache
-    STORAGE_BUCKET_NAME:
-      Fn::Join:
-        - ''
-        - - Ref: StorageS3Bucket
-    NOTIFICATION_EMAIL_SENDER: recipient@yourdomain.com
-    NOTIFICATION_EMAIL_RECIPIENT: recipient@yourdomain.com
+    STORAGE_BUCKET_NAME: !Ref StorageS3Bucket
+    NOTIFICATION_EMAIL_SENDER: portfolio@jonaswitt.com
+    NOTIFICATION_EMAIL_RECIPIENT: mail@jonaswitt.com
 
 plugins:
   # - serverless-python-requirements
