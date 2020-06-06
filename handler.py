@@ -24,6 +24,11 @@ limitsFilename = "limits.csv"
 limitsPath = os.path.join(workingDir, limitsFilename)
 
 def handler(event, context):
+    if "Records" in event:
+        s3Keys = [r["s3"]["object"]["key"] for r in event["Records"]]
+        print("S3 notification for keys: {}".format(s3Keys))
+        if "movements.csv" not in s3Keys:
+            return
     today = datetime.date.today()
 
     # Download cache
