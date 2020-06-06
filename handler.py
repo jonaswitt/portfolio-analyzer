@@ -46,7 +46,7 @@ def handler(event, context):
             localPath = os.path.join(cacheDir, os.path.basename(key))
             bucket.download_file(key, localPath)
     except Exception as ex:
-        print(ex)
+        print("Could not download cache: {}".format(ex))
 
     # Download & parse movements
     bucket.download_file(movementsFilename, movementsPath)
@@ -106,4 +106,4 @@ def handler(event, context):
             key = "{}{}".format(cacheKeyPrefix, cacheFileName)
             bucket.upload_file(cacheFilePath, key)
     except Exception as ex:
-        print(ex)
+        print("Could not upload cache: {}".format(ex))
