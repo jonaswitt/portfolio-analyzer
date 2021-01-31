@@ -26,9 +26,9 @@ limitsPath = os.path.join(workingDir, limitsFilename)
 def handler(event, context):
     if "Records" in event:
         s3Keys = [r["s3"]["object"]["key"] for r in event["Records"]]
-        movementsUpdated = "movements.csv" in s3Keys
-        print("S3 notification for keys: {} / movementsUpdated: {}".format(s3Keys, movementsUpdated))
-        if not movementsUpdated:
+        inputsUpdated = movementsFilename in s3Keys or limitsFilename in s3Keys
+        print("S3 notification for keys: {} / inputs updated: {}".format(s3Keys, inputsUpdated))
+        if not inputsUpdated:
             return
     elif event.get("source", None) == "aws.events" and event.get("detail-type", None) == "Scheduled Event":
         print("Scheduled invocation")
